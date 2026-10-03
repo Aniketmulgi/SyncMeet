@@ -1,23 +1,48 @@
-const express = require('express');
-require('dotenv').config();
+const express = require("express");
+const http = require("http");
+const cors = require("cors");
+const { Server } = require("socket.io");
 
 const app = express();
-const port = process.env.PORT || 5000; // Fallback to 5000 if process.env.PORT is missing
-const cors = require('cors');
 
-app.use(cors());
+const PORT = 5000;
+
+app.use(cors({
+  origin: "http://localhost:5173",
+}));
+
 app.use(express.json());
 
-// Main route
-app.get('/', (req, res) => {
-  res.send('Hello World!');
+app.get("/", (req, res) => {
+  res.send("Server is running");
 });
 
-// Sample API route matching your Vite proxy
-app.get('/api/test', (req, res) => {
-  res.json({ message: 'Connected to Express backend!' });
+
+app.get('/api/test',(req,res)=>{
+  res.send("Success")
+})
+
+app.post('/api/login',(req,res)=>{
+  console.log(req.body)
+})
+
+const server = http.createServer(app);
+
+const io = new Server(server, {
+  cors: {
+    origin: "http://localhost:5173",
+    methods: ["GET", "POST"],
+  },
 });
 
-app.listen(port, () => {
-  console.log(`Backend server running on http://localhost:${port}`);
+io.on("connection", (socket) => {
+  console.log(" Socket connected:", socket.id);
+
+  socket.on("disconnect", () => {
+    console.log("Socket disconnected:", socket.id);
+  });
+});
+
+server.listen(PORT, () => {
+  console.log(`Server running at http://localhost:${PORT}`);
 });

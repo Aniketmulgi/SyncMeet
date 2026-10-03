@@ -1,736 +1,736 @@
-/* ==========================================================================
-   MEET.CSS — Dark-mode-first video meeting UI
-   Plain CSS (no dependencies). Import once in your React entry:
-       import "./meet.css";
-   If you use Tailwind, put this file AFTER @tailwind directives, or paste
-   sections 1–2 into your index.css and keep the rest as a component sheet.
-
-   NAMING: BEM-style, prefixed by component → .auth-card__title, .tile--speaking
-   STATE:  modifiers (--muted) or data/aria attributes ([aria-pressed="true"])
-
-   CONTENTS
-   1. Design tokens
-   2. Base, scrollbars, focus rings
-   3. Shared primitives (buttons, badges, avatars, inputs)
-   4. Auth pages (login / register)
-   5. Meeting layout + video grid
-   6. Control bar
-   7. Side panel shell + participants
-   8. Chat
-   9. Loading / connecting
-   10. Responsive + reduced motion
-   ========================================================================== */
-
-@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap");
-
-
-/* ==========================================================================
-   1. DESIGN TOKENS
-   Palette is built on the #00040f / #11101d / cyan family already used in
-   your portfolio, so both projects feel related.
-   ========================================================================== */
-:root {
-  /* Surfaces (darkest → lightest) */
-  --bg-app:        #00040f;                 /* page background          */
-  --bg-surface:    #0b0d1a;                 /* panels, control bar      */
-  --bg-elevated:   #141629;                 /* tiles, inputs, bubbles   */
-  --bg-hover:      #1c1f38;                 /* hover on elevated items  */
-  --bg-overlay:    rgba(17, 16, 29, 0.72);  /* glass cards, name tags   */
-
-  /* Text */
-  --text-primary:   #f2f5fa;
-  --text-secondary: #aab2c5;
-  --text-muted:     #6f7891;
-  --text-on-accent: #00141a;                /* dark text on cyan        */
-
-  /* Accents */
-  --accent:        #33bbcf;                 /* primary action (teal)    */
-  --accent-light:  #5ce1e6;
-  --accent-dim:    rgba(51, 187, 207, 0.16);
-  --accent-glow:   rgba(51, 187, 207, 0.35);
-  --success:       #2ecc8f;
-  --success-dim:   rgba(46, 204, 143, 0.16);
-  --danger:        #ef4458;                 /* leave / muted            */
-  --danger-hover:  #ff5c70;
-  --danger-dim:    rgba(239, 68, 88, 0.16);
-  --warning:       #f5b83d;                 /* raised hand              */
-
-  /* Borders */
-  --border:        rgba(255, 255, 255, 0.08);
-  --border-strong: rgba(255, 255, 255, 0.16);
-
-  /* Radii */
-  --radius-sm: 8px;
-  --radius-md: 14px;
-  --radius-lg: 22px;
-  --radius-pill: 999px;
-
-  /* Shadows */
-  --shadow-card:  0 20px 100px -10px rgba(0, 0, 0, 0.6);
-  --shadow-float: 0 10px 40px rgba(0, 0, 0, 0.55);
-
-  /* Spacing scale */
-  --space-1: 4px;  --space-2: 8px;  --space-3: 12px;
-  --space-4: 16px; --space-5: 24px; --space-6: 32px;
-
-  /* Type */
-  --font: "Poppins", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --fs-xs: 0.75rem; --fs-sm: 0.875rem; --fs-md: 1rem;
-  --fs-lg: 1.25rem; --fs-xl: 1.75rem;
-
-  /* Motion */
-  --ease: cubic-bezier(0.25, 0.46, 0.45, 0.94);
-  --t-fast: 150ms;
-  --t-med: 280ms;
-
-  /* Layout */
-  --panel-width: 360px;
-  --controls-height: 84px;
-}
-
-
-/* ==========================================================================
-   2. BASE, SCROLLBARS, FOCUS
-   ========================================================================== */
-*, *::before, *::after { box-sizing: border-box; }
-
-html { scroll-behavior: smooth; }
-
-body {
-  margin: 0;
-  min-height: 100vh;
-  background: var(--bg-app);
-  color: var(--text-primary);
-  font-family: var(--font);
-  font-size: var(--fs-md);
-  line-height: 1.5;
-  -webkit-font-smoothing: antialiased;
-}
-
-button, input, textarea { font: inherit; color: inherit; }
-button { cursor: pointer; }
-button:disabled { cursor: not-allowed; opacity: 0.5; }
-
-/* Slim scrollbars — Firefox */
-* {
-  scrollbar-width: thin;
-  scrollbar-color: var(--border-strong) transparent;
-}
-/* Slim scrollbars — Chromium / Safari */
-*::-webkit-scrollbar { width: 8px; height: 8px; }
-*::-webkit-scrollbar-track { background: transparent; }
-*::-webkit-scrollbar-thumb {
-  background: var(--border-strong);
-  border-radius: var(--radius-pill);
-}
-*::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
-
-/* Keyboard-only focus ring (no ring on mouse click) */
-:focus-visible {
-  outline: 2px solid var(--accent-light);
-  outline-offset: 3px;
-}
-
-/* Visually hidden, still read by screen readers */
-.sr-only {
-  position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
-  overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
-}
-
-
-/* ==========================================================================
-   3. SHARED PRIMITIVES
-   ========================================================================== */
-
-/* ---- Buttons ----------------------------------------------------------- */
-.btn {
-  display: inline-flex; align-items: center; justify-content: center;
-  gap: var(--space-2);
-  padding: 12px 20px;
-  border: 1px solid transparent;
-  border-radius: var(--radius-md);
-  font-weight: 600;
-  transition: transform var(--t-fast) var(--ease),
-              background var(--t-fast) var(--ease),
-              box-shadow var(--t-fast) var(--ease);
-}
-.btn:active:not(:disabled) { transform: scale(0.97); }
-
-.btn--primary { background: var(--accent); color: var(--text-on-accent); }
-.btn--primary:hover:not(:disabled) {
-  background: var(--accent-light);
-  box-shadow: 0 0 24px var(--accent-glow);
-}
-.btn--ghost { background: transparent; border-color: var(--border-strong); color: var(--text-primary); }
-.btn--ghost:hover:not(:disabled) { background: var(--bg-hover); }
-.btn--danger { background: var(--danger); color: #fff; }
-.btn--danger:hover:not(:disabled) { background: var(--danger-hover); }
-.btn--block { width: 100%; }
-.btn--sm { padding: 8px 14px; font-size: var(--fs-sm); border-radius: var(--radius-sm); }
-
-/* ---- Round icon button (used in controls, panel headers, rows) ---------- */
-.icon-btn {
-  display: inline-grid; place-items: center;
-  width: 44px; height: 44px;
-  border: 1px solid var(--border);
-  border-radius: 50%;
-  background: var(--bg-elevated);
-  color: var(--text-primary);
-  transition: background var(--t-fast) var(--ease),
-              transform var(--t-fast) var(--ease),
-              border-color var(--t-fast) var(--ease);
-}
-.icon-btn:hover:not(:disabled) { background: var(--bg-hover); border-color: var(--border-strong); }
-.icon-btn:active:not(:disabled) { transform: scale(0.92); }
-.icon-btn svg { width: 20px; height: 20px; }
-.icon-btn--sm { width: 32px; height: 32px; }
-.icon-btn--sm svg { width: 16px; height: 16px; }
-
-/* ---- Badges ------------------------------------------------------------- */
-.badge {
-  display: inline-flex; align-items: center; gap: 4px;
-  padding: 2px 8px;
-  border-radius: var(--radius-pill);
-  font-size: var(--fs-xs); font-weight: 600; line-height: 1.5;
-  background: var(--bg-hover); color: var(--text-secondary);
-}
-.badge--host    { background: var(--accent-dim);  color: var(--accent-light); }
-.badge--cohost  { background: var(--success-dim); color: var(--success); }
-.badge--count {                       /* notification dot on control buttons */
-  position: absolute; top: -4px; right: -4px;
-  min-width: 18px; height: 18px; padding: 0 5px;
-  justify-content: center;
-  background: var(--danger); color: #fff;
-  border: 2px solid var(--bg-surface);
-}
-
-/* ---- Avatar (initials fallback when camera is off) ---------------------- */
-.avatar {
-  display: grid; place-items: center;
-  width: 40px; height: 40px;
-  border-radius: 50%;
-  background: linear-gradient(157deg, #7de7eb -40%, #33bbcf 90%);
-  color: var(--text-on-accent);
-  font-weight: 700; font-size: var(--fs-sm);
-  flex-shrink: 0; user-select: none;
-}
-.avatar--lg { width: 88px; height: 88px; font-size: var(--fs-xl); }
-
-/* ---- Text input + label (shared by auth, search, chat) ------------------ */
-.field { display: flex; flex-direction: column; gap: 6px; }
-.field__label { font-size: var(--fs-sm); font-weight: 500; color: var(--text-secondary); }
-.field__hint  { font-size: var(--fs-xs); color: var(--text-muted); }
-.field__error { font-size: var(--fs-xs); color: var(--danger-hover); }
-
-.input {
-  width: 100%;  
-  padding: 12px 14px;
-  background: var(--bg-elevated);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  color: var(--text-primary);
-  transition: border-color var(--t-fast) var(--ease), box-shadow var(--t-fast) var(--ease);
-}
-.input::placeholder { color: var(--text-muted); }
-.input:hover { border-color: var(--border-strong); }
-.input:focus {                       /* active glow */
-  outline: none;
-  border-color: var(--accent);
-  box-shadow: 0 0 0 4px var(--accent-dim), 0 0 20px var(--accent-glow);
-}
-.input[aria-invalid="true"] { border-color: var(--danger); box-shadow: 0 0 0 4px var(--danger-dim); }
-
-
-/* ==========================================================================
-   4. AUTH PAGES (Login / Register)
-   Usage:
-     <main class="auth-page">
-       <form class="auth-card"> ... </form>
-     </main>
-   ========================================================================== */
-.auth-page {
-  min-height: 100vh;
-  display: grid; place-items: center;
-  padding: var(--space-5);
-  position: relative; overflow: hidden;
-  background: var(--bg-app);
-}
-/* Soft cyan/violet light behind the card — what makes the glass read as glass */
-.auth-page::before,
-.auth-page::after {
-  content: ""; position: absolute; border-radius: 50%;
-  filter: blur(120px); pointer-events: none;
-}
-.auth-page::before { width: 420px; height: 420px; top: -80px; left: -80px; background: rgba(51, 187, 207, 0.35); }
-.auth-page::after  { width: 380px; height: 380px; bottom: -100px; right: -60px; background: rgba(120, 90, 255, 0.28); }
-
-.auth-card {
-  position: relative; z-index: 1;
-  width: 100%; max-width: 420px;
-  display: flex; flex-direction: column; gap: var(--space-4);
-  padding: var(--space-6);
-  background: var(--bg-overlay);
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-card);
-  -webkit-backdrop-filter: blur(20px) saturate(140%);
-          backdrop-filter: blur(20px) saturate(140%);
-}
-.auth-card__title    { margin: 0; font-size: var(--fs-xl); font-weight: 600; }
-.auth-card__subtitle { margin: -8px 0 var(--space-2); color: var(--text-secondary); font-size: var(--fs-sm); }
-.auth-card__divider  {
-  display: flex; align-items: center; gap: var(--space-3);
-  color: var(--text-muted); font-size: var(--fs-xs);
-}
-.auth-card__divider::before,
-.auth-card__divider::after { content: ""; flex: 1; height: 1px; background: var(--border); }
-.auth-card__footer { text-align: center; font-size: var(--fs-sm); color: var(--text-secondary); }
-.auth-card__footer a { color: var(--accent-light); font-weight: 600; text-decoration: none; }
-.auth-card__footer a:hover { text-decoration: underline; }
-
-/* Fallback when backdrop-filter is unsupported */
-@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .auth-card { background: var(--bg-surface); }
-}
-
-
-/* ==========================================================================
-   5. MEETING LAYOUT + VIDEO GRID
-   Structure:
-     <div class="meet [meet--panel-open]">
-       <div class="meet__stage">
-         <div class="video-grid" data-count="4"> <div class="tile">…</div> </div>
-         <div class="controls">…</div>
-       </div>
-       <aside class="side-panel">…</aside>
-     </div>
-   Set data-count on .video-grid to the participant count for tuned layouts.
-   ========================================================================== */
-.meet {
-  display: grid;
-  grid-template-columns: 1fr 0;       /* panel collapsed */
-  height: 100vh; height: 100dvh;      /* dvh avoids mobile address-bar jump */
-  background: var(--bg-app);
-  overflow: hidden;
-  transition: grid-template-columns var(--t-med) var(--ease);
-}
-.meet--panel-open { grid-template-columns: 1fr var(--panel-width); }
-
-.meet__stage {
-  position: relative;
-  display: flex; flex-direction: column;
-  min-width: 0;
-  padding: var(--space-4) var(--space-4) 0;
-}
-
-/* ---- Video grid --------------------------------------------------------- */
-.video-grid {
-  flex: 1; min-height: 0;
-  display: grid; gap: var(--space-3);
-  /* Default: as many ~320px columns as fit; rows share height equally */
-  grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
-  grid-auto-rows: 1fr;
-  padding-bottom: calc(var(--controls-height) + var(--space-4)); /* room for floating bar */
-  overflow-y: auto;
-}
-.video-grid[data-count="1"] { grid-template-columns: minmax(0, 1fr); }
-.video-grid[data-count="2"] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.video-grid[data-count="3"],
-.video-grid[data-count="4"] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.video-grid[data-count="5"],
-.video-grid[data-count="6"] { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-
-/* Screen-share layout: big presentation + filmstrip of cameras */
-.video-grid--presenting {
-  grid-template-columns: minmax(0, 1fr) 200px;
-  grid-auto-rows: auto;
-}
-.video-grid--presenting .tile--presentation { grid-row: 1 / span 6; }
-
-/* ---- Tile --------------------------------------------------------------- */
-.tile {
-  position: relative; overflow: hidden;
-  min-height: 0;
-  display: grid; place-items: center;
-  background: var(--bg-elevated);
-  border-radius: var(--radius-md);
-  border: 2px solid transparent;               /* reserve space so highlight doesn't shift layout */
-  transition: border-color var(--t-med) var(--ease), box-shadow var(--t-med) var(--ease);
-}
-.tile__video {
-  position: absolute; inset: 0;
-  width: 100%; height: 100%;
-  object-fit: cover;
-  background: #000;
-}
-.tile--local .tile__video { transform: scaleX(-1); }  /* mirror own camera */
-.tile--presentation .tile__video { object-fit: contain; }
-
-/* Camera off → hide the video, show avatar (render <Avatar/> inside .tile) */
-.tile--video-off .tile__video { display: none; }
-
-/* Active speaker highlight */
-.tile--speaking {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--accent-dim), 0 0 32px var(--accent-glow);
-}
-
-/* Name tag, bottom-left */
-.tile__meta {
-  position: absolute; left: var(--space-3); bottom: var(--space-3);
-  display: flex; align-items: center; gap: 6px;
-  max-width: calc(100% - 24px);
-  padding: 4px 10px;
-  background: var(--bg-overlay);
-  border-radius: var(--radius-pill);
-  font-size: var(--fs-xs); font-weight: 500;
-  -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
-}
-.tile__name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.tile__meta svg { width: 14px; height: 14px; flex-shrink: 0; }
-.tile__meta .is-muted { color: var(--danger-hover); }
-
-/* Raised-hand pip, top-right */
-.tile__hand {
-  position: absolute; top: var(--space-3); right: var(--space-3);
-  display: grid; place-items: center;
-  width: 32px; height: 32px;
-  background: var(--warning); color: #2a1d00;
-  border-radius: 50%;
-  animation: hand-wave 1.2s ease-in-out infinite;
-}
-@keyframes hand-wave {
-  0%, 100% { transform: rotate(0); }
-  25%      { transform: rotate(-14deg); }
-  75%      { transform: rotate(14deg); }
-}
-
-
-/* ==========================================================================
-   6. CONTROL BAR
-   Floating, centered, glass pill.
-   Active-state convention (matches Meet/Zoom):
-     • default           → neutral grey
-     • aria-pressed=true → "feature ON" (accent) for share / chat / people
-     • .is-off           → mic or camera turned OFF → red
-     • .controls__leave  → always red
-   ========================================================================== */
-.controls {
-  position: absolute; left: 50%; bottom: var(--space-4);
-  transform: translateX(-50%);
-  z-index: 20;
-  display: flex; align-items: center; gap: var(--space-3);
-  padding: var(--space-3) var(--space-4);
-  background: var(--bg-overlay);
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius-pill);
-  box-shadow: var(--shadow-float);
-  -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px);
-}
-
-.controls__btn {
-  position: relative;                    /* anchors .badge--count */
-  display: grid; place-items: center;
-  width: 52px; height: 52px;
-  border: 1px solid var(--border);
-  border-radius: 50%;
-  background: var(--bg-elevated);
-  color: var(--text-primary);
-  transition: background var(--t-fast) var(--ease),
-              transform var(--t-fast) var(--ease),
-              box-shadow var(--t-fast) var(--ease);
-}
-.controls__btn svg { width: 22px; height: 22px; }
-.controls__btn:hover { background: var(--bg-hover); transform: translateY(-2px); }
-.controls__btn:active { transform: scale(0.94); }
-
-/* Feature turned ON */
-.controls__btn[aria-pressed="true"] {
-  background: var(--accent); color: var(--text-on-accent); border-color: transparent;
-  box-shadow: 0 0 20px var(--accent-glow);
-}
-/* Mic / camera turned OFF */
-.controls__btn.is-off {
-  background: var(--danger-dim); color: var(--danger-hover); border-color: var(--danger);
-}
-.controls__btn.is-off:hover { background: var(--danger); color: #fff; }
-
-/* Leave: wider pill, solid red */
-.controls__leave {
-  width: auto; padding: 0 22px; gap: var(--space-2);
-  display: inline-flex; align-items: center;
-  border-radius: var(--radius-pill);
-  background: var(--danger); border-color: transparent; color: #fff;
-  font-weight: 600; font-size: var(--fs-sm);
-}
-.controls__leave:hover { background: var(--danger-hover); box-shadow: 0 0 24px rgba(239, 68, 88, 0.5); }
-
-.controls__sep { width: 1px; height: 28px; background: var(--border-strong); }
-
-/* Tooltip from data-label (CSS-only): <button class="controls__btn" data-label="Mute"> */
-.controls__btn[data-label]::after {
-  content: attr(data-label);
-  position: absolute; bottom: calc(100% + 10px); left: 50%;
-  transform: translate(-50%, 4px);
-  padding: 4px 10px; white-space: nowrap;
-  background: #000; color: #fff;
-  border-radius: 6px; font-size: var(--fs-xs);
-  opacity: 0; pointer-events: none;
-  transition: opacity var(--t-fast), transform var(--t-fast);
-}
-.controls__btn[data-label]:hover::after,
-.controls__btn[data-label]:focus-visible::after { opacity: 1; transform: translate(-50%, 0); }
-
-
-/* ==========================================================================
-   7. SIDE PANEL SHELL + PARTICIPANTS
-   One shell reused by Participants and Chat. Collapses to width 0 via the
-   .meet grid; content is clipped by overflow so no extra JS is needed.
-   ========================================================================== */
-.side-panel {
-  display: flex; flex-direction: column;
-  min-width: 0; overflow: hidden;
-  background: var(--bg-surface);
-  border-left: 1px solid var(--border);
-}
-.side-panel__header {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: var(--space-4);
-  border-bottom: 1px solid var(--border);
-}
-.side-panel__title { margin: 0; font-size: var(--fs-md); font-weight: 600; }
-.side-panel__count { margin-left: var(--space-2); color: var(--text-muted); font-weight: 400; }
-.side-panel__body  { flex: 1; min-height: 0; overflow-y: auto; }
-
-/* ---- Participants ------------------------------------------------------- */
-.people__search { padding: var(--space-3) var(--space-4); }
-.people__search .input { padding-left: 38px; background-repeat: no-repeat; background-position: 12px center; }
-/* Add your own search icon: .people__search .input { background-image: url("data:image/svg+xml,…"); } */
-
-.host-controls {                         /* action area, host only */
-  display: flex; flex-wrap: wrap; gap: var(--space-2);
-  margin: 0 var(--space-4) var(--space-3);
-  padding: var(--space-3);
-  background: var(--accent-dim);
-  border: 1px solid rgba(51, 187, 207, 0.25);
-  border-radius: var(--radius-md);
-}
-.host-controls .btn { flex: 1 1 auto; }
-
-.people__list { list-style: none; margin: 0; padding: 0 var(--space-2) var(--space-4); }
-
-.person {
-  display: flex; align-items: center; gap: var(--space-3);
-  padding: var(--space-2) var(--space-3);
-  border-radius: var(--radius-md);
-  transition: background var(--t-fast) var(--ease);
-}
-.person:hover { background: var(--bg-elevated); }
-.person__info  { flex: 1; min-width: 0; display: flex; flex-direction: column; }
-.person__name  { display: flex; align-items: center; gap: 6px; font-size: var(--fs-sm); font-weight: 500; }
-.person__name span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.person__sub   { font-size: var(--fs-xs); color: var(--text-muted); }
-
-/* Status icons: mic / video / hand */
-.person__status { display: flex; align-items: center; gap: 6px; }
-.status-icon { width: 18px; height: 18px; color: var(--text-secondary); }
-.status-icon--off  { color: var(--danger-hover); }   /* muted mic / camera off */
-.status-icon--hand { color: var(--warning); animation: hand-wave 1.2s ease-in-out infinite; }
-.status-icon--talking { color: var(--success); }
-
-/* Row actions (mute, remove…) reveal on hover/focus */
-.person__actions { display: flex; gap: 4px; opacity: 0; transition: opacity var(--t-fast); }
-.person:hover .person__actions,
-.person:focus-within .person__actions { opacity: 1; }
-
-
-/* ==========================================================================
-   8. IN-MEETING CHAT
-   Message markup:
-     <li class="msg msg--self|msg--other|msg--system"> 
-       <span class="msg__author">Name</span>
-       <div class="msg__bubble">text</div>
-       <time class="msg__time">10:42</time>
-     </li>
-   ========================================================================== */
-.chat__messages {
-  list-style: none; margin: 0;
-  padding: var(--space-4);
-  display: flex; flex-direction: column; gap: var(--space-3);
-}
-
-.msg { display: flex; flex-direction: column; max-width: 85%; gap: 2px; }
-.msg__author { font-size: var(--fs-xs); color: var(--text-muted); padding: 0 var(--space-2); }
-.msg__bubble {
-  padding: 10px 14px;
-  font-size: var(--fs-sm); line-height: 1.45;
-  overflow-wrap: anywhere;
-  animation: msg-in var(--t-med) var(--ease) both;
-}
-.msg__time { font-size: 0.6875rem; color: var(--text-muted); padding: 0 var(--space-2); }
-
-/* Received */
-.msg--other { align-self: flex-start; }
-.msg--other .msg__bubble {
-  background: var(--bg-elevated);
-  border: 1px solid var(--border);
-  border-radius: 4px var(--radius-md) var(--radius-md) var(--radius-md);
-}
-
-/* Sent by me */
-.msg--self { align-self: flex-end; align-items: flex-end; }
-.msg--self .msg__bubble {
-  background: var(--accent); color: var(--text-on-accent);
-  border-radius: var(--radius-md) 4px var(--radius-md) var(--radius-md);
-}
-
-/* System / host notice: centered, no bubble */
-.msg--system { align-self: center; max-width: 100%; align-items: center; }
-.msg--system .msg__bubble {
-  padding: 4px 12px;
-  background: var(--accent-dim); color: var(--accent-light);
-  border-radius: var(--radius-pill);
-  font-size: var(--fs-xs); text-align: center;
-}
-.msg--system .msg__author, .msg--system .msg__time { display: none; }
-
-@keyframes msg-in {
-  from { opacity: 0; transform: translateY(8px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-/* Composer pinned to bottom of the panel */
-.chat__composer {
-  display: flex; align-items: flex-end; gap: var(--space-2);
-  padding: var(--space-3) var(--space-4) var(--space-4);
-  background: var(--bg-surface);
-  border-top: 1px solid var(--border);
-}
-.chat__input-wrap { position: relative; flex: 1; }
-.chat__input {
-  width: 100%; max-height: 120px; resize: none;
-  padding: 11px 44px 11px 14px;                /* right gap for emoji trigger */
-  background: var(--bg-elevated);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  transition: border-color var(--t-fast), box-shadow var(--t-fast);
-}
-.chat__input::placeholder { color: var(--text-muted); }
-.chat__input:focus {
-  outline: none; border-color: var(--accent);
-  box-shadow: 0 0 0 4px var(--accent-dim);
-}
-.chat__emoji,
-.chat__attach {
-  background: transparent; border: 0; color: var(--text-muted);
-  transition: color var(--t-fast);
-}
-.chat__emoji { position: absolute; right: 10px; bottom: 9px; }
-.chat__emoji:hover, .chat__attach:hover { color: var(--accent-light); }
-.chat__send {
-  display: grid; place-items: center;
-  width: 44px; height: 44px; flex-shrink: 0;
-  border: 0; border-radius: 50%;
-  background: var(--accent); color: var(--text-on-accent);
-  transition: transform var(--t-fast), box-shadow var(--t-fast);
-}
-.chat__send:hover:not(:disabled) { box-shadow: 0 0 20px var(--accent-glow); transform: scale(1.06); }
-
-
-/* ==========================================================================
-   9. LOADING / CONNECTING
-   Usage:
-     <div class="connecting" role="status" aria-live="polite">
-       <div class="pulse-ring"><span></span><span></span><span></span></div>
-       <p class="connecting__title">Joining room…</p>
-       <p class="connecting__hint">Checking your camera and microphone</p>
-     </div>
-   ========================================================================== */
-.connecting {
-  min-height: 100vh;
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: var(--space-3);
-  background: radial-gradient(circle at 50% 40%, #0d1630 0%, var(--bg-app) 65%);
-  text-align: center; padding: var(--space-5);
-}
-.connecting__title { margin: var(--space-4) 0 0; font-size: var(--fs-lg); font-weight: 600; }
-.connecting__hint  { margin: 0; color: var(--text-secondary); font-size: var(--fs-sm); }
-
-/* Pulsing rings radiating from a solid core */
-.pulse-ring { position: relative; width: 96px; height: 96px; }
-.pulse-ring::before {                      /* solid core */
-  content: ""; position: absolute; inset: 34px;
-  border-radius: 50%;
-  background: var(--accent);
-  box-shadow: 0 0 30px var(--accent-glow);
-}
-.pulse-ring span {
-  position: absolute; inset: 0;
-  border: 2px solid var(--accent);
-  border-radius: 50%;
-  opacity: 0;
-  animation: pulse-out 2.1s cubic-bezier(0.2, 0.6, 0.3, 1) infinite;
-}
-.pulse-ring span:nth-child(2) { animation-delay: 0.7s; }
-.pulse-ring span:nth-child(3) { animation-delay: 1.4s; }
-@keyframes pulse-out {
-  0%   { transform: scale(0.35); opacity: 0.9; }
-  100% { transform: scale(1.5);  opacity: 0; }
-}
-
-/* Small inline spinner for buttons ("Signing in…") */
-.spinner {
-  width: 18px; height: 18px;
-  border: 2px solid currentColor; border-right-color: transparent;
-  border-radius: 50%;
-  animation: spin 0.7s linear infinite;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
-
-
-/* ==========================================================================
-   10. RESPONSIVE + REDUCED MOTION
-   ========================================================================== */
-
-/* Tablet: panel overlays the stage instead of squeezing it */
-@media (max-width: 900px) {
-  .meet, .meet--panel-open { grid-template-columns: 1fr; }
-  .side-panel {
-    position: fixed; top: 0; right: 0; bottom: 0; z-index: 30;
-    width: min(var(--panel-width), 100%);
-    box-shadow: var(--shadow-float);
-    transform: translateX(100%);
-    transition: transform var(--t-med) var(--ease);
+  /* ==========================================================================
+    MEET.CSS — Dark-mode-first video meeting UI
+    Plain CSS (no dependencies). Import once in your React entry:
+        import "./meet.css";
+    If you use Tailwind, put this file AFTER @tailwind directives, or paste
+    sections 1–2 into your index.css and keep the rest as a component sheet.
+
+    NAMING: BEM-style, prefixed by component → .auth-card__title, .tile--speaking
+    STATE:  modifiers (--muted) or data/aria attributes ([aria-pressed="true"])
+
+    CONTENTS
+    1. Design tokens
+    2. Base, scrollbars, focus rings
+    3. Shared primitives (buttons, badges, avatars, inputs)
+    4. Auth pages (login / register)
+    5. Meeting layout + video grid
+    6. Control bar
+    7. Side panel shell + participants
+    8. Chat
+    9. Loading / connecting
+    10. Responsive + reduced motion
+    ========================================================================== */
+
+  @import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap");
+
+
+  /* ==========================================================================
+    1. DESIGN TOKENS
+    Palette is built on the #00040f / #11101d / cyan family already used in
+    your portfolio, so both projects feel related.
+    ========================================================================== */
+  :root {
+    /* Surfaces (darkest → lightest) */
+    --bg-app:        #00040f;                 /* page background          */
+    --bg-surface:    #0b0d1a;                 /* panels, control bar      */
+    --bg-elevated:   #141629;                 /* tiles, inputs, bubbles   */
+    --bg-hover:      #1c1f38;                 /* hover on elevated items  */
+    --bg-overlay:    rgba(17, 16, 29, 0.72);  /* glass cards, name tags   */
+
+    /* Text */
+    --text-primary:   #f2f5fa;
+    --text-secondary: #aab2c5;
+    --text-muted:     #6f7891;
+    --text-on-accent: #00141a;                /* dark text on cyan        */
+
+    /* Accents */
+    --accent:        #33bbcf;                 /* primary action (teal)    */
+    --accent-light:  #5ce1e6;
+    --accent-dim:    rgba(51, 187, 207, 0.16);
+    --accent-glow:   rgba(51, 187, 207, 0.35);
+    --success:       #2ecc8f;
+    --success-dim:   rgba(46, 204, 143, 0.16);
+    --danger:        #ef4458;                 /* leave / muted            */
+    --danger-hover:  #ff5c70;
+    --danger-dim:    rgba(239, 68, 88, 0.16);
+    --warning:       #f5b83d;                 /* raised hand              */
+
+    /* Borders */
+    --border:        rgba(255, 255, 255, 0.08);
+    --border-strong: rgba(255, 255, 255, 0.16);
+
+    /* Radii */
+    --radius-sm: 8px;
+    --radius-md: 14px;
+    --radius-lg: 22px;
+    --radius-pill: 999px;
+
+    /* Shadows */
+    --shadow-card:  0 20px 100px -10px rgba(0, 0, 0, 0.6);
+    --shadow-float: 0 10px 40px rgba(0, 0, 0, 0.55);
+
+    /* Spacing scale */
+    --space-1: 4px;  --space-2: 8px;  --space-3: 12px;
+    --space-4: 16px; --space-5: 24px; --space-6: 32px;
+
+    /* Type */
+    --font: "Poppins", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --fs-xs: 0.75rem; --fs-sm: 0.875rem; --fs-md: 1rem;
+    --fs-lg: 1.25rem; --fs-xl: 1.75rem;
+
+    /* Motion */
+    --ease: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    --t-fast: 150ms;
+    --t-med: 280ms;
+
+    /* Layout */
+    --panel-width: 360px;
+    --controls-height: 84px;
   }
-  .meet--panel-open .side-panel { transform: translateX(0); }
-  .video-grid--presenting { grid-template-columns: 1fr; }
-}
 
-/* Phone: tighter controls, single column grid, labels hidden */
-@media (max-width: 600px) {
-  .meet__stage { padding: var(--space-2) var(--space-2) 0; }
-  .video-grid,
-  .video-grid[data-count] { grid-template-columns: minmax(0, 1fr); grid-auto-rows: minmax(160px, 1fr); }
-  .video-grid[data-count="4"],
+
+  /* ==========================================================================
+    2. BASE, SCROLLBARS, FOCUS
+    ========================================================================== */
+  *, *::before, *::after { box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: var(--bg-app);
+    color: var(--text-primary);
+    font-family: var(--font);
+    font-size: var(--fs-md);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  button, input, textarea { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  button:disabled { cursor: not-allowed; opacity: 0.5; }
+
+  /* Slim scrollbars — Firefox */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-strong) transparent;
+  }
+  /* Slim scrollbars — Chromium / Safari */
+  *::-webkit-scrollbar { width: 8px; height: 8px; }
+  *::-webkit-scrollbar-track { background: transparent; }
+  *::-webkit-scrollbar-thumb {
+    background: var(--border-strong);
+    border-radius: var(--radius-pill);
+  }
+  *::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+  /* Keyboard-only focus ring (no ring on mouse click) */
+  :focus-visible {
+    outline: 2px solid var(--accent-light);
+    outline-offset: 3px;
+  }
+
+  /* Visually hidden, still read by screen readers */
+  .sr-only {
+    position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+    overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+  }
+
+
+  /* ==========================================================================
+    3. SHARED PRIMITIVES
+    ========================================================================== */
+
+  /* ---- Buttons ----------------------------------------------------------- */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    gap: var(--space-2);
+    padding: 12px 20px;
+    border: 1px solid transparent;
+    border-radius: var(--radius-md);
+    font-weight: 600;
+    transition: transform var(--t-fast) var(--ease),
+                background var(--t-fast) var(--ease),
+                box-shadow var(--t-fast) var(--ease);
+  }
+  .btn:active:not(:disabled) { transform: scale(0.97); }
+
+  .btn--primary { background: var(--accent); color: var(--text-on-accent); }
+  .btn--primary:hover:not(:disabled) {
+    background: var(--accent-light);
+    box-shadow: 0 0 24px var(--accent-glow);
+  }
+  .btn--ghost { background: transparent; border-color: var(--border-strong); color: var(--text-primary); }
+  .btn--ghost:hover:not(:disabled) { background: var(--bg-hover); }
+  .btn--danger { background: var(--danger); color: #fff; }
+  .btn--danger:hover:not(:disabled) { background: var(--danger-hover); }
+  .btn--block { width: 100%; }
+  .btn--sm { padding: 8px 14px; font-size: var(--fs-sm); border-radius: var(--radius-sm); }
+
+  /* ---- Round icon button (used in controls, panel headers, rows) ---------- */
+  .icon-btn {
+    display: inline-grid; place-items: center;
+    width: 44px; height: 44px;
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    background: var(--bg-elevated);
+    color: var(--text-primary);
+    transition: background var(--t-fast) var(--ease),
+                transform var(--t-fast) var(--ease),
+                border-color var(--t-fast) var(--ease);
+  }
+  .icon-btn:hover:not(:disabled) { background: var(--bg-hover); border-color: var(--border-strong); }
+  .icon-btn:active:not(:disabled) { transform: scale(0.92); }
+  .icon-btn svg { width: 20px; height: 20px; }
+  .icon-btn--sm { width: 32px; height: 32px; }
+  .icon-btn--sm svg { width: 16px; height: 16px; }
+
+  /* ---- Badges ------------------------------------------------------------- */
+  .badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 2px 8px;
+    border-radius: var(--radius-pill);
+    font-size: var(--fs-xs); font-weight: 600; line-height: 1.5;
+    background: var(--bg-hover); color: var(--text-secondary);
+  }
+  .badge--host    { background: var(--accent-dim);  color: var(--accent-light); }
+  .badge--cohost  { background: var(--success-dim); color: var(--success); }
+  .badge--count {                       /* notification dot on control buttons */
+    position: absolute; top: -4px; right: -4px;
+    min-width: 18px; height: 18px; padding: 0 5px;
+    justify-content: center;
+    background: var(--danger); color: #fff;
+    border: 2px solid var(--bg-surface);
+  }
+
+  /* ---- Avatar (initials fallback when camera is off) ---------------------- */
+  .avatar {
+    display: grid; place-items: center;
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(157deg, #7de7eb -40%, #33bbcf 90%);
+    color: var(--text-on-accent);
+    font-weight: 700; font-size: var(--fs-sm);
+    flex-shrink: 0; user-select: none;
+  }
+  .avatar--lg { width: 88px; height: 88px; font-size: var(--fs-xl); }
+
+  /* ---- Text input + label (shared by auth, search, chat) ------------------ */
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .field__label { font-size: var(--fs-sm); font-weight: 500; color: var(--text-secondary); }
+  .field__hint  { font-size: var(--fs-xs); color: var(--text-muted); }
+  .field__error { font-size: var(--fs-xs); color: var(--danger-hover); }
+
+  .input {
+    width: 100%;  
+    padding: 12px 14px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    color: var(--text-primary);
+    transition: border-color var(--t-fast) var(--ease), box-shadow var(--t-fast) var(--ease);
+  }
+  .input::placeholder { color: var(--text-muted); }
+  .input:hover { border-color: var(--border-strong); }
+  .input:focus {                       /* active glow */
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 4px var(--accent-dim), 0 0 20px var(--accent-glow);
+  }
+  .input[aria-invalid="true"] { border-color: var(--danger); box-shadow: 0 0 0 4px var(--danger-dim); }
+
+
+  /* ==========================================================================
+    4. AUTH PAGES (Login / Register)
+    Usage:
+      <main class="auth-page">
+        <form class="auth-card"> ... </form>
+      </main>
+    ========================================================================== */
+  .auth-page {
+    min-height: 100vh;
+    display: grid; place-items: center;
+    padding: var(--space-5);
+    position: relative; overflow: hidden;
+    background: var(--bg-app);
+  }
+  /* Soft cyan/violet light behind the card — what makes the glass read as glass */
+  .auth-page::before,
+  .auth-page::after {
+    content: ""; position: absolute; border-radius: 50%;
+    filter: blur(120px); pointer-events: none;
+  }
+  .auth-page::before { width: 420px; height: 420px; top: -80px; left: -80px; background: rgba(51, 187, 207, 0.35); }
+  .auth-page::after  { width: 380px; height: 380px; bottom: -100px; right: -60px; background: rgba(120, 90, 255, 0.28); }
+
+  .auth-card {
+    position: relative; z-index: 1;
+    width: 100%; max-width: 420px;
+    display: flex; flex-direction: column; gap: var(--space-4);
+    padding: var(--space-6);
+    background: var(--bg-overlay);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card);
+    -webkit-backdrop-filter: blur(20px) saturate(140%);
+            backdrop-filter: blur(20px) saturate(140%);
+  }
+  .auth-card__title    { margin: 0; font-size: var(--fs-xl); font-weight: 600; }
+  .auth-card__subtitle { margin: -8px 0 var(--space-2); color: var(--text-secondary); font-size: var(--fs-sm); }
+  .auth-card__divider  {
+    display: flex; align-items: center; gap: var(--space-3);
+    color: var(--text-muted); font-size: var(--fs-xs);
+  }
+  .auth-card__divider::before,
+  .auth-card__divider::after { content: ""; flex: 1; height: 1px; background: var(--border); }
+  .auth-card__footer { text-align: center; font-size: var(--fs-sm); color: var(--text-secondary); }
+  .auth-card__footer a { color: var(--accent-light); font-weight: 600; text-decoration: none; }
+  .auth-card__footer a:hover { text-decoration: underline; }
+
+  /* Fallback when backdrop-filter is unsupported */
+  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .auth-card { background: var(--bg-surface); }
+  }
+
+
+  /* ==========================================================================
+    5. MEETING LAYOUT + VIDEO GRID
+    Structure:
+      <div class="meet [meet--panel-open]">
+        <div class="meet__stage">
+          <div class="video-grid" data-count="4"> <div class="tile">…</div> </div>
+          <div class="controls">…</div>
+        </div>
+        <aside class="side-panel">…</aside>
+      </div>
+    Set data-count on .video-grid to the participant count for tuned layouts.
+    ========================================================================== */
+  .meet {
+    display: grid;
+    grid-template-columns: 1fr 0;       /* panel collapsed */
+    height: 100vh; height: 100dvh;      /* dvh avoids mobile address-bar jump */
+    background: var(--bg-app);
+    overflow: hidden;
+    transition: grid-template-columns var(--t-med) var(--ease);
+  }
+  .meet--panel-open { grid-template-columns: 1fr var(--panel-width); }
+
+  .meet__stage {
+    position: relative;
+    display: flex; flex-direction: column;
+    min-width: 0;
+    padding: var(--space-4) var(--space-4) 0;
+  }
+
+  /* ---- Video grid --------------------------------------------------------- */
+  .video-grid {
+    flex: 1; min-height: 0;
+    display: grid; gap: var(--space-3);
+    /* Default: as many ~320px columns as fit; rows share height equally */
+    grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
+    grid-auto-rows: 1fr;
+    padding-bottom: calc(var(--controls-height) + var(--space-4)); /* room for floating bar */
+    overflow-y: auto;
+  }
+  .video-grid[data-count="1"] { grid-template-columns: minmax(0, 1fr); }
+  .video-grid[data-count="2"] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .video-grid[data-count="3"],
+  .video-grid[data-count="4"] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .video-grid[data-count="5"],
-  .video-grid[data-count="6"] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .video-grid[data-count="6"] { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 
-  .controls { width: calc(100% - 16px); justify-content: space-between; gap: var(--space-1); padding: var(--space-2); }
-  .controls__btn { width: 44px; height: 44px; }
-  .controls__leave { padding: 0 14px; }
-  .controls__leave .label, .controls__sep { display: none; }
-  .controls__btn[data-label]::after { display: none; }
-
-  .auth-card { padding: var(--space-5); }
-}
-
-/* Respect users who ask for less motion */
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
+  /* Screen-share layout: big presentation + filmstrip of cameras */
+  .video-grid--presenting {
+    grid-template-columns: minmax(0, 1fr) 200px;
+    grid-auto-rows: auto;
   }
-  .pulse-ring span { opacity: 0.4; transform: scale(1); }   /* keep a static ring */
-}
+  .video-grid--presenting .tile--presentation { grid-row: 1 / span 6; }
+
+  /* ---- Tile --------------------------------------------------------------- */
+  .tile {
+    position: relative; overflow: hidden;
+    min-height: 0;
+    display: grid; place-items: center;
+    background: var(--bg-elevated);
+    border-radius: var(--radius-md);
+    border: 2px solid transparent;               /* reserve space so highlight doesn't shift layout */
+    transition: border-color var(--t-med) var(--ease), box-shadow var(--t-med) var(--ease);
+  }
+  .tile__video {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    object-fit: cover;
+    background: #000;
+  }
+  .tile--local .tile__video { transform: scaleX(-1); }  /* mirror own camera */
+  .tile--presentation .tile__video { object-fit: contain; }
+
+  /* Camera off → hide the video, show avatar (render <Avatar/> inside .tile) */
+  .tile--video-off .tile__video { display: none; }
+
+  /* Active speaker highlight */
+  .tile--speaking {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-dim), 0 0 32px var(--accent-glow);
+  }
+
+  /* Name tag, bottom-left */
+  .tile__meta {
+    position: absolute; left: var(--space-3); bottom: var(--space-3);
+    display: flex; align-items: center; gap: 6px;
+    max-width: calc(100% - 24px);
+    padding: 4px 10px;
+    background: var(--bg-overlay);
+    border-radius: var(--radius-pill);
+    font-size: var(--fs-xs); font-weight: 500;
+    -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+  }
+  .tile__name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tile__meta svg { width: 14px; height: 14px; flex-shrink: 0; }
+  .tile__meta .is-muted { color: var(--danger-hover); }
+
+  /* Raised-hand pip, top-right */
+  .tile__hand {
+    position: absolute; top: var(--space-3); right: var(--space-3);
+    display: grid; place-items: center;
+    width: 32px; height: 32px;
+    background: var(--warning); color: #2a1d00;
+    border-radius: 50%;
+    animation: hand-wave 1.2s ease-in-out infinite;
+  }
+  @keyframes hand-wave {
+    0%, 100% { transform: rotate(0); }
+    25%      { transform: rotate(-14deg); }
+    75%      { transform: rotate(14deg); }
+  }
+
+
+  /* ==========================================================================
+    6. CONTROL BAR
+    Floating, centered, glass pill.
+    Active-state convention (matches Meet/Zoom):
+      • default           → neutral grey
+      • aria-pressed=true → "feature ON" (accent) for share / chat / people
+      • .is-off           → mic or camera turned OFF → red
+      • .controls__leave  → always red
+    ========================================================================== */
+  .controls {
+    position: absolute; left: 50%; bottom: var(--space-4);
+    transform: translateX(-50%);
+    z-index: 20;
+    display: flex; align-items: center; gap: var(--space-3);
+    padding: var(--space-3) var(--space-4);
+    background: var(--bg-overlay);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-pill);
+    box-shadow: var(--shadow-float);
+    -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px);
+  }
+
+  .controls__btn {
+    position: relative;                    /* anchors .badge--count */
+    display: grid; place-items: center;
+    width: 52px; height: 52px;
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    background: var(--bg-elevated);
+    color: var(--text-primary);
+    transition: background var(--t-fast) var(--ease),
+                transform var(--t-fast) var(--ease),
+                box-shadow var(--t-fast) var(--ease);
+  }
+  .controls__btn svg { width: 22px; height: 22px; }
+  .controls__btn:hover { background: var(--bg-hover); transform: translateY(-2px); }
+  .controls__btn:active { transform: scale(0.94); }
+
+  /* Feature turned ON */
+  .controls__btn[aria-pressed="true"] {
+    background: var(--accent); color: var(--text-on-accent); border-color: transparent;
+    box-shadow: 0 0 20px var(--accent-glow);
+  }
+  /* Mic / camera turned OFF */
+  .controls__btn.is-off {
+    background: var(--danger-dim); color: var(--danger-hover); border-color: var(--danger);
+  }
+  .controls__btn.is-off:hover { background: var(--danger); color: #fff; }
+
+  /* Leave: wider pill, solid red */
+  .controls__leave {
+    width: auto; padding: 0 22px; gap: var(--space-2);
+    display: inline-flex; align-items: center;
+    border-radius: var(--radius-pill);
+    background: var(--danger); border-color: transparent; color: #fff;
+    font-weight: 600; font-size: var(--fs-sm);
+  }
+  .controls__leave:hover { background: var(--danger-hover); box-shadow: 0 0 24px rgba(239, 68, 88, 0.5); }
+
+  .controls__sep { width: 1px; height: 28px; background: var(--border-strong); }
+
+  /* Tooltip from data-label (CSS-only): <button class="controls__btn" data-label="Mute"> */
+  .controls__btn[data-label]::after {
+    content: attr(data-label);
+    position: absolute; bottom: calc(100% + 10px); left: 50%;
+    transform: translate(-50%, 4px);
+    padding: 4px 10px; white-space: nowrap;
+    background: #000; color: #fff;
+    border-radius: 6px; font-size: var(--fs-xs);
+    opacity: 0; pointer-events: none;
+    transition: opacity var(--t-fast), transform var(--t-fast);
+  }
+  .controls__btn[data-label]:hover::after,
+  .controls__btn[data-label]:focus-visible::after { opacity: 1; transform: translate(-50%, 0); }
+
+
+  /* ==========================================================================
+    7. SIDE PANEL SHELL + PARTICIPANTS
+    One shell reused by Participants and Chat. Collapses to width 0 via the
+    .meet grid; content is clipped by overflow so no extra JS is needed.
+    ========================================================================== */
+  .side-panel {
+    display: flex; flex-direction: column;
+    min-width: 0; overflow: hidden;
+    background: var(--bg-surface);
+    border-left: 1px solid var(--border);
+  }
+  .side-panel__header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: var(--space-4);
+    border-bottom: 1px solid var(--border);
+  }
+  .side-panel__title { margin: 0; font-size: var(--fs-md); font-weight: 600; }
+  .side-panel__count { margin-left: var(--space-2); color: var(--text-muted); font-weight: 400; }
+  .side-panel__body  { flex: 1; min-height: 0; overflow-y: auto; }
+
+  /* ---- Participants ------------------------------------------------------- */
+  .people__search { padding: var(--space-3) var(--space-4); }
+  .people__search .input { padding-left: 38px; background-repeat: no-repeat; background-position: 12px center; }
+  /* Add your own search icon: .people__search .input { background-image: url("data:image/svg+xml,…"); } */
+
+  .host-controls {                         /* action area, host only */
+    display: flex; flex-wrap: wrap; gap: var(--space-2);
+    margin: 0 var(--space-4) var(--space-3);
+    padding: var(--space-3);
+    background: var(--accent-dim);
+    border: 1px solid rgba(51, 187, 207, 0.25);
+    border-radius: var(--radius-md);
+  }
+  .host-controls .btn { flex: 1 1 auto; }
+
+  .people__list { list-style: none; margin: 0; padding: 0 var(--space-2) var(--space-4); }
+
+  .person {
+    display: flex; align-items: center; gap: var(--space-3);
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-md);
+    transition: background var(--t-fast) var(--ease);
+  }
+  .person:hover { background: var(--bg-elevated); }
+  .person__info  { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .person__name  { display: flex; align-items: center; gap: 6px; font-size: var(--fs-sm); font-weight: 500; }
+  .person__name span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .person__sub   { font-size: var(--fs-xs); color: var(--text-muted); }
+
+  /* Status icons: mic / video / hand */
+  .person__status { display: flex; align-items: center; gap: 6px; }
+  .status-icon { width: 18px; height: 18px; color: var(--text-secondary); }
+  .status-icon--off  { color: var(--danger-hover); }   /* muted mic / camera off */
+  .status-icon--hand { color: var(--warning); animation: hand-wave 1.2s ease-in-out infinite; }
+  .status-icon--talking { color: var(--success); }
+
+  /* Row actions (mute, remove…) reveal on hover/focus */
+  .person__actions { display: flex; gap: 4px; opacity: 0; transition: opacity var(--t-fast); }
+  .person:hover .person__actions,
+  .person:focus-within .person__actions { opacity: 1; }
+
+
+  /* ==========================================================================
+    8. IN-MEETING CHAT
+    Message markup:
+      <li class="msg msg--self|msg--other|msg--system"> 
+        <span class="msg__author">Name</span>
+        <div class="msg__bubble">text</div>
+        <time class="msg__time">10:42</time>
+      </li>
+    ========================================================================== */
+  .chat__messages {
+    list-style: none; margin: 0;
+    padding: var(--space-4);
+    display: flex; flex-direction: column; gap: var(--space-3);
+  }
+
+  .msg { display: flex; flex-direction: column; max-width: 85%; gap: 2px; }
+  .msg__author { font-size: var(--fs-xs); color: var(--text-muted); padding: 0 var(--space-2); }
+  .msg__bubble {
+    padding: 10px 14px;
+    font-size: var(--fs-sm); line-height: 1.45;
+    overflow-wrap: anywhere;
+    animation: msg-in var(--t-med) var(--ease) both;
+  }
+  .msg__time { font-size: 0.6875rem; color: var(--text-muted); padding: 0 var(--space-2); }
+
+  /* Received */
+  .msg--other { align-self: flex-start; }
+  .msg--other .msg__bubble {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: 4px var(--radius-md) var(--radius-md) var(--radius-md);
+  }
+
+  /* Sent by me */
+  .msg--self { align-self: flex-end; align-items: flex-end; }
+  .msg--self .msg__bubble {
+    background: var(--accent); color: var(--text-on-accent);
+    border-radius: var(--radius-md) 4px var(--radius-md) var(--radius-md);
+  }
+
+  /* System / host notice: centered, no bubble */
+  .msg--system { align-self: center; max-width: 100%; align-items: center; }
+  .msg--system .msg__bubble {
+    padding: 4px 12px;
+    background: var(--accent-dim); color: var(--accent-light);
+    border-radius: var(--radius-pill);
+    font-size: var(--fs-xs); text-align: center;
+  }
+  .msg--system .msg__author, .msg--system .msg__time { display: none; }
+
+  @keyframes msg-in {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Composer pinned to bottom of the panel */
+  .chat__composer {
+    display: flex; align-items: flex-end; gap: var(--space-2);
+    padding: var(--space-3) var(--space-4) var(--space-4);
+    background: var(--bg-surface);
+    border-top: 1px solid var(--border);
+  }
+  .chat__input-wrap { position: relative; flex: 1; }
+  .chat__input {
+    width: 100%; max-height: 120px; resize: none;
+    padding: 11px 44px 11px 14px;                /* right gap for emoji trigger */
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    transition: border-color var(--t-fast), box-shadow var(--t-fast);
+  }
+  .chat__input::placeholder { color: var(--text-muted); }
+  .chat__input:focus {
+    outline: none; border-color: var(--accent);
+    box-shadow: 0 0 0 4px var(--accent-dim);
+  }
+  .chat__emoji,
+  .chat__attach {
+    background: transparent; border: 0; color: var(--text-muted);
+    transition: color var(--t-fast);
+  }
+  .chat__emoji { position: absolute; right: 10px; bottom: 9px; }
+  .chat__emoji:hover, .chat__attach:hover { color: var(--accent-light); }
+  .chat__send {
+    display: grid; place-items: center;
+    width: 44px; height: 44px; flex-shrink: 0;
+    border: 0; border-radius: 50%;
+    background: var(--accent); color: var(--text-on-accent);
+    transition: transform var(--t-fast), box-shadow var(--t-fast);
+  }
+  .chat__send:hover:not(:disabled) { box-shadow: 0 0 20px var(--accent-glow); transform: scale(1.06); }
+
+
+  /* ==========================================================================
+    9. LOADING / CONNECTING
+    Usage:
+      <div class="connecting" role="status" aria-live="polite">
+        <div class="pulse-ring"><span></span><span></span><span></span></div>
+        <p class="connecting__title">Joining room…</p>
+        <p class="connecting__hint">Checking your camera and microphone</p>
+      </div>
+    ========================================================================== */
+  .connecting {
+    min-height: 100vh;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: var(--space-3);
+    background: radial-gradient(circle at 50% 40%, #0d1630 0%, var(--bg-app) 65%);
+    text-align: center; padding: var(--space-5);
+  }
+  .connecting__title { margin: var(--space-4) 0 0; font-size: var(--fs-lg); font-weight: 600; }
+  .connecting__hint  { margin: 0; color: var(--text-secondary); font-size: var(--fs-sm); }
+
+  /* Pulsing rings radiating from a solid core */
+  .pulse-ring { position: relative; width: 96px; height: 96px; }
+  .pulse-ring::before {                      /* solid core */
+    content: ""; position: absolute; inset: 34px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 30px var(--accent-glow);
+  }
+  .pulse-ring span {
+    position: absolute; inset: 0;
+    border: 2px solid var(--accent);
+    border-radius: 50%;
+    opacity: 0;
+    animation: pulse-out 2.1s cubic-bezier(0.2, 0.6, 0.3, 1) infinite;
+  }
+  .pulse-ring span:nth-child(2) { animation-delay: 0.7s; }
+  .pulse-ring span:nth-child(3) { animation-delay: 1.4s; }
+  @keyframes pulse-out {
+    0%   { transform: scale(0.35); opacity: 0.9; }
+    100% { transform: scale(1.5);  opacity: 0; }
+  }
+
+  /* Small inline spinner for buttons ("Signing in…") */
+  .spinner {
+    width: 18px; height: 18px;
+    border: 2px solid currentColor; border-right-color: transparent;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+
+  /* ==========================================================================
+    10. RESPONSIVE + REDUCED MOTION
+    ========================================================================== */
+
+  /* Tablet: panel overlays the stage instead of squeezing it */
+  @media (max-width: 900px) {
+    .meet, .meet--panel-open { grid-template-columns: 1fr; }
+    .side-panel {
+      position: fixed; top: 0; right: 0; bottom: 0; z-index: 30;
+      width: min(var(--panel-width), 100%);
+      box-shadow: var(--shadow-float);
+      transform: translateX(100%);
+      transition: transform var(--t-med) var(--ease);
+    }
+    .meet--panel-open .side-panel { transform: translateX(0); }
+    .video-grid--presenting { grid-template-columns: 1fr; }
+  }
+
+  /* Phone: tighter controls, single column grid, labels hidden */
+  @media (max-width: 600px) {
+    .meet__stage { padding: var(--space-2) var(--space-2) 0; }
+    .video-grid,
+    .video-grid[data-count] { grid-template-columns: minmax(0, 1fr); grid-auto-rows: minmax(160px, 1fr); }
+    .video-grid[data-count="4"],
+    .video-grid[data-count="5"],
+    .video-grid[data-count="6"] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+    .controls { width: calc(100% - 16px); justify-content: space-between; gap: var(--space-1); padding: var(--space-2); }
+    .controls__btn { width: 44px; height: 44px; }
+    .controls__leave { padding: 0 14px; }
+    .controls__leave .label, .controls__sep { display: none; }
+    .controls__btn[data-label]::after { display: none; }
+
+    .auth-card { padding: var(--space-5); }
+  }
+
+  /* Respect users who ask for less motion */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+    .pulse-ring span { opacity: 0.4; transform: scale(1); }   /* keep a static ring */
+  }
