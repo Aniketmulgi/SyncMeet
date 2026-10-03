@@ -1,10 +1,9 @@
 import React from 'react'
-import MeetingLayout from './MeetingRoom'
+import MeetingLayout from '../components/MeetingLayout'
 
 const Room = () => {
   return (
     <div>
-        <MeetingLayout/>
     </div>
   )
 }

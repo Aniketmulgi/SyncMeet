@@ -3,7 +3,7 @@ import Register from './components/Register'
 import Login from './components/Login'
 import Room from './pages/Room'
 import { Route,Routes } from 'react-router-dom'
-import MeetingLayout from './pages/MeetingRoom'
+import MeetingLayout from './components/MeetingLayout'
 
 const App = () => {
 
@@ -14,7 +14,7 @@ const App = () => {
         <Route path='/' element={<MeetingLayout/>}/>
         <Route path='/Login' element={<Login/>}/>
         <Route path='/Register' element={<Register/>}/>
-        <Route path='/Room' element={<Room/>}/>
+        <Route path='/Room' element={<MeetingLayout/>}/>
 
       </Routes>
     </div>
