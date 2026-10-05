@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import "../index.css";
 
+
 const MeetingLayout = () => {
   const videoRef = useRef(null);
   const [myStream, setMyStream] = useState(null);

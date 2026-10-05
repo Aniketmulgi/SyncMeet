@@ -1,67 +1,69 @@
 import React, { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import Loading from './Loading'
 
 const Login = () => {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const navigate = useNavigate()
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    setEmail("")
-    setPassword("")
-    console.log({ email, password })
-    const userData = 
-      { email, password };
+    setError('')
+    setLoading(true)
 
     try {
-      const response = await fetch('http://localhost:5000/api/login', {
-        method: 'POST', // HTTP method used for creating/sending data
-        headers: {
-          'Content-Type': 'application/json' // Tells the server we are sending JSON
-        },
-        body: JSON.stringify(userData) // Converts the JS object to a JSON string
-        
-      });
+      const res = await fetch('http://localhost:5000/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      })
 
-      const result = await response.json(); // Parses the backend's response
-      console.log("Success:", result);
-    } catch (error) {
-      console.error("Error sending data:", error);
+      const data = await res.json()
+
+      if (!res.ok) {
+        setError(data.message)
+        setLoading(false)
+        return
+      }
+
+      localStorage.setItem('token', data.token)
+      localStorage.setItem('user', JSON.stringify(data.user))
+      navigate('/')
+    } catch (err) {
+      setError('Something went wrong')
+      setLoading(false)
     }
+  }
 
+  return (
+    <div>
+      <div className='auth-page'>
+        <form className='auth-card' onSubmit={handleSubmit}>
+          <h1 className='auth-card__title'>Login</h1>
+          <div className='auth-card__divider'></div>
 
+          {error && <p style={{ color: 'red' }}>{error}</p>}
 
-}
+          <label htmlFor="email" className='field__label'>Email</label>
+          <input type="text" placeholder='email' id='email' className='field input' value={email} onChange={(e) => setEmail(e.target.value)} />
 
-return (
-  <div >
-    <div className='auth-page'>
-      <form className='auth-card' onSubmit={handleSubmit}>
+          <label htmlFor="password" className='field__label'>Password</label>
+          <input type='password' placeholder='Password' id='password' className='input' value={password} onChange={(e) => setPassword(e.target.value)} />
 
-        <h1 className='auth-card__title'>Login</h1>
-        <div className='auth-card__divider'></div>
-        <label htmlFor="email" className='field__label'>
-          Email
-        </label>
-        <input type="text" placeholder='email' id='email' className='field input' value={email} onChange={(e) => setEmail(e.target.value)}
-        />
+          <button type="submit" className='btn btn--primary'>
+            Submit {loading ? <Loading /> : ''}
+          </button>
 
-        <label htmlFor="password" className='field__label'>
-          Password
-        </label>
-        <input type='password' placeholder='Password' id='password' className='input' value={password} onChange={(e) => setPassword(e.target.value)}
-        />
-
-        <button type="submit" className='btn btn--primary'>
-          Submit
-        </button>
-
-        <div className="auth-card__footer">
-          <a href="/Register">Not Registered ? Create a account</a>
-        </div>
-      </form>
+          <div className="auth-card__footer">
+            <a href="/Register">Not Registered ? Create a account</a>
+          </div>
+        </form>
+      </div>
     </div>
-  </div>
-)
+  )
 }
 
 export default Login
