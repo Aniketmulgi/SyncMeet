@@ -51,11 +51,19 @@ io.on('connection', (socket) => {
 
   socket.on('join-room', (roomId) => {
     socket.join(roomId)
-    socket.to(roomId).emit('user-joined', { userId: socket.user.id, email: socket.user.email })
+    socket.to(roomId).emit('user-joined', { userId: socket.user.id, email: socket.user.email, socketId: socket.id })
   })
 
-  socket.on('video-chunk', ({ roomId, chunk }) => {
-    socket.to(roomId).emit('video-chunk', { chunk, from: socket.user.email })
+  socket.on('offer', ({ to, offer }) => {
+    socket.to(to).emit('offer', { from: socket.id, offer })
+  })
+
+  socket.on('answer', ({ to, answer }) => {
+    socket.to(to).emit('answer', { from: socket.id, answer })
+  })
+
+  socket.on('ice-candidate', ({ to, candidate }) => {
+    socket.to(to).emit('ice-candidate', { from: socket.id, candidate })
   })
 
   socket.on('disconnect', () => {
